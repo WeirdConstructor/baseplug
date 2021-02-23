@@ -4,6 +4,7 @@ use crate::{
 
     Plugin,
     PluginUI,
+    PluginContext,
     MidiReceiver,
     Param,
 
@@ -37,21 +38,27 @@ pub(crate) struct WrappedPlugin<P: Plugin> {
     pub(crate) smoothed_model: <P::Model as Model<P>>::Smooth,
     sample_rate: f32,
 
-    pub(crate) ui_handle: Option<<Self as WrappedPluginUI<P>>::UIHandle>
+    pub(crate) ui_handle: Option<<Self as WrappedPluginUI<P>>::UIHandle>,
+
+    pub(crate) plugin_context: P::PluginContext,
 }
 
 impl<P: Plugin> WrappedPlugin<P> {
     #[inline]
     pub(crate) fn new() -> Self {
+        let mut plugin_context = P::PluginContext::new();
+
         Self {
-            plug: P::new(48000.0, &P::Model::default()),
+            plug: P::new(48000.0, &P::Model::default(), &mut plugin_context),
             events: Vec::with_capacity(512),
             output_events: Vec::with_capacity(256),
             smoothed_model:
                 <P::Model as Model<P>>::Smooth::from_model(P::Model::default()),
             sample_rate: 0.0,
 
-            ui_handle: None
+            ui_handle: None,
+
+            plugin_context,
         }
     }
 
@@ -70,7 +77,7 @@ impl<P: Plugin> WrappedPlugin<P> {
     #[inline]
     pub(crate) fn reset(&mut self) {
         let model = self.smoothed_model.as_model();
-        self.plug = P::new(self.sample_rate, &model);
+        self.plug = P::new(self.sample_rate, &model, &mut self.plugin_context);
         self.smoothed_model.reset(&model);
     }
 
@@ -242,7 +249,7 @@ impl<P: Plugin> WrappedPlugin<P> {
                 };
 
                 let proc_model = self.smoothed_model.process(block_frames);
-                self.plug.process(&proc_model, &mut context);
+                self.plug.process(&proc_model, &mut context, &mut self.plugin_context);
             }
 
             nframes -= block_frames;

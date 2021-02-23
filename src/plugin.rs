@@ -44,6 +44,10 @@ macro_rules! proc_model {
     }
 }
 
+pub trait PluginContext<P: Plugin>: Send + Sync + 'static {
+    fn new() -> Self;
+}
+
 pub trait Plugin: Sized + Send + Sync + 'static {
     const NAME: &'static str;
     const PRODUCT: &'static str;
@@ -54,11 +58,14 @@ pub trait Plugin: Sized + Send + Sync + 'static {
 
     type Model: Model<Self> + Serialize + DeserializeOwned;
 
-    fn new(sample_rate: f32, model: &Self::Model) -> Self;
+    type PluginContext : PluginContext<Self> + Send + Sync;
+
+    fn new(sample_rate: f32, model: &Self::Model, plug_ctx: &mut Self::PluginContext) -> Self;
 
     fn process<'proc>(&mut self,
         model: &proc_model!(Self, 'proc),
-        ctx: &'proc mut ProcessContext<Self>);
+        ctx: &'proc mut ProcessContext<Self>,
+        plug_ctx: &mut Self::PluginContext);
 }
 
 pub trait MidiReceiver: Plugin {
@@ -73,7 +80,7 @@ pub trait PluginUI: Plugin {
 
     fn ui_size() -> (i16, i16);
 
-    fn ui_open(parent: &impl HasRawWindowHandle) -> WindowOpenResult<Self::Handle>;
+    fn ui_open(parent: &impl HasRawWindowHandle, plug_ctx: &mut Self::PluginContext) -> WindowOpenResult<Self::Handle>;
     fn ui_close(handle: Self::Handle);
 
     fn ui_param_notify(handle: &Self::Handle,
