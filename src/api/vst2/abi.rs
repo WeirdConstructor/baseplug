@@ -135,7 +135,10 @@ macro_rules! vst2 {
         use std::os::raw::c_void;
         use std::mem::transmute;
 
-        #[cfg(any(crate_type="bin", test))]
+        #[cfg(crate_type="bin")]
+        std::compile_error!("vst2 requires an exported main() symbol, this will conflict for example with `cargo test` and non dynamic library crates.");
+
+        #[cfg(test)]
         std::compile_error!("vst2 requires an exported main() symbol, this will conflict for example with `cargo test` and non dynamic library crates.");
 
         #[allow(non_snake_case)]
