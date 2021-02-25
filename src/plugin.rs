@@ -60,12 +60,12 @@ pub trait Plugin: Sized + Send + Sync + 'static {
 
     type PluginContext : PluginContext<Self> + Send + Sync;
 
-    fn new(sample_rate: f32, model: &Self::Model, plug_ctx: &mut Self::PluginContext) -> Self;
+    fn new(sample_rate: f32, model: &Self::Model, plug_ctx: &Self::PluginContext) -> Self;
 
     fn process<'proc>(&mut self,
         model: &proc_model!(Self, 'proc),
         ctx: &'proc mut ProcessContext<Self>,
-        plug_ctx: &mut Self::PluginContext);
+        plug_ctx: &Self::PluginContext);
 }
 
 pub trait MidiReceiver: Plugin {
@@ -80,7 +80,7 @@ pub trait PluginUI: Plugin {
 
     fn ui_size() -> (i16, i16);
 
-    fn ui_open(parent: &impl HasRawWindowHandle, plug_ctx: &mut Self::PluginContext) -> WindowOpenResult<Self::Handle>;
+    fn ui_open(parent: &impl HasRawWindowHandle, plug_ctx: &Self::PluginContext) -> WindowOpenResult<Self::Handle>;
     fn ui_close(handle: Self::Handle);
 
     fn ui_param_notify(handle: &Self::Handle,
