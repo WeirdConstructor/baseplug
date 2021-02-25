@@ -88,7 +88,7 @@ impl<P: PluginUI> VST2UI for VST2Adapter<P> {
         let parent = VST2WindowHandle(parent);
 
         if self.wrapped.ui_handle.is_none() {
-            P::ui_open(&parent, &mut self.wrapped.plugin_context)
+            P::ui_open(&parent, &self.wrapped.plugin_context)
                 .map(|handle| self.wrapped.ui_handle = Some(handle))
         } else {
             Ok(())
